@@ -1,36 +1,37 @@
 const std = @import("std");
 const testing = std.testing;
 
+// TODO: Add checks to make sure `T` implments `Widget` correctly!
+
 pub const Widget = struct {
     const Self = @This();
 
     pub const Vtable = struct {
-        deinitFn: *const fn (self: *Widget) void,
+        deinitFn: *const fn (self: *Widget, allocator: std.mem.Allocator) void,
         showFn: *const fn (self: *Widget) anyerror!void,
         getParentFn: *const fn (self: *Widget) ?*Widget,
         isDisplayedFn: *const fn (self: *Widget) bool,
     };
 
+    pub const Info = struct {
+        has_children: bool = false,
+        children: ?std.ArrayListUnmanaged(Widget) = null,
+        parent: ?*Self = null,
+        name: ?[]const u8 = null,
+    };
+
     component: *anyopaque,
-    component_type_name: []const u8,
     vtable: *const Vtable,
 
-    has_children: bool = false,
-    children: ?std.ArrayListUnmanaged(Self) = null,
-    parent: ?*Self = null,
-    name: ?[]const u8,
-
-    pub fn init(name: ?[]const u8, component: *anyopaque, vtable: *const Vtable) Self {
+    pub fn init(component: *anyopaque, vtable: *const Vtable) Self {
         return Self{
             .component = component,
             .vtable = vtable,
-            .component_type_name = @typeName(@TypeOf(component)),
-            .name = name,
         };
     }
 
-    pub fn deinit(self: *Self) void {
-        return self.vtable.deinitFn(self);
+    pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
+        return self.vtable.deinitFn(self, allocator);
     }
 
     pub fn show(self: *Self) anyerror!void {
@@ -54,7 +55,7 @@ pub const Widget = struct {
     }
 
     pub fn cast(self: *const Self, comptime T: type) ?*T {
-        if (self.vtable == &T.Vtable) {
+        if (self.isType(T)) {
             return self.castUnchecked(T);
         }
         return null;
@@ -72,7 +73,7 @@ test "Create widget" {
     };
 
     var custom = Custom{};
-    const custom_widget = Widget.init(null, &custom, &Custom.Vtable);
+    const custom_widget = Widget.init(&custom, &Custom.Vtable);
 
     try testing.expect(custom_widget.isType(Custom));
 
