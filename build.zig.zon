@@ -1,7 +1,14 @@
 .{
     .name = "goober",
-    .version = "0.0.0",
-    .dependencies = .{},
+    .version = "0.1.0",
+
+    .dependencies = .{
+        .sdl = .{
+            .url = "https://github.com/allyourcodebase/SDL/archive/d3ce729.tar.gz",
+            .hash = "1220c8b7fffe055e95a991cbaf5d86b4d5ea380294b0b4326b2ee46110613cf7972e",
+        },
+    },
+
     .paths = .{
         "build.zig",
         "build.zig.zon",
