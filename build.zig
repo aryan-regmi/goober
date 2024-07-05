@@ -21,6 +21,10 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    const mutt = b.dependency("mutt", .{
+        .target = target,
+        .optimize = optimize,
+    }).module("mutt");
 
     // Install SDL dep
     if (target.query.isNativeOs() and target.result.os.tag == .linux) {
@@ -29,6 +33,9 @@ pub fn build(b: *std.Build) void {
     } else {
         lib.linkLibrary(sdl.artifact("SDL2"));
     }
+
+    // Install mutt dep
+    lib.root_module.addImport("mutt", mutt);
 
     // Install lib + create module
     // ========================================
@@ -50,6 +57,9 @@ pub fn build(b: *std.Build) void {
     } else {
         lib_unit_tests.linkLibrary(sdl.artifact("SDL2"));
     }
+
+    // Install mutt dep
+    lib_unit_tests.root_module.addImport("mutt", mutt);
 
     const run_lib_unit_tests = b.addRunArtifact(lib_unit_tests);
     const test_step = b.step("test", "Run unit tests");
