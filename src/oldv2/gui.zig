@@ -1,14 +1,17 @@
 const std = @import("std");
 const testing = std.testing;
 const sdl = @import("sdl.zig").sdl;
-const widget = @import("widget.zig");
+const widgets = @import("widgets.zig");
 const Allocator = std.mem.Allocator;
 const EventHandler = @import("event_handler.zig").EventHandler;
 
-// TODO: Add iterator to get children/query for specific widgets
-
 pub const Gui = struct {
     const Self = @This();
+    allocator: Allocator,
+    window: *sdl.SDL_Window,
+    renderer: *sdl.SDL_Renderer,
+    event_handler: EventHandler,
+    root: widgets.Widget,
 
     pub const Config = struct {
         resizeable: bool = true,
@@ -22,13 +25,6 @@ pub const Gui = struct {
         } = .{},
     };
 
-    allocator: Allocator,
-    window: *sdl.SDL_Window,
-    renderer: *sdl.SDL_Renderer,
-    event_handler: EventHandler,
-    widgets: std.ArrayListUnmanaged(widget.Widget),
-
-    /// Initalize the GUI.
     pub fn init(allocator: Allocator, title: [*c]const u8, config: Config) !Self {
         // Init SDL
         if (sdl.SDL_Init(sdl.SDL_INIT_VIDEO | sdl.SDL_INIT_EVENTS) != 0) {
@@ -57,35 +53,22 @@ pub const Gui = struct {
         // Create renderer
         const renderer = sdl.SDL_CreateRenderer(window, -1, sdl.SDL_RENDERER_ACCELERATED) orelse return error.SdlInitializationFailed;
 
-        // Add root widget to Gui
-        const root = try widget.Widget.init(.root);
-        var widgets = std.ArrayListUnmanaged(widget.Widget){};
-        widgets.append(allocator, root) catch return error.GooberWidgetsInitFailed;
-
-        // Register `quit` event handler (on root)
+        // Init event handler and root
         var event_handler = EventHandler{};
-        event_handler.register(allocator, sdl.SDL_QUIT, &widgets.items[0], (struct {
-            pub fn callback(this: *anyopaque, ev: sdl.SDL_Event) void {
-                if (ev.type == sdl.SDL_QUIT) {
-                    const self_: *widget.Root = @ptrCast(@alignCast(this));
-                    self_.quit = true;
-                }
-            }
-        }).callback) catch return error.GooberFailedRootInit;
+        const root = try widgets.Widget.init(.root, allocator, &event_handler);
 
         return Self{
             .allocator = allocator,
             .window = window,
             .renderer = renderer,
             .event_handler = event_handler,
-            .widgets = widgets,
+            .root = root,
         };
     }
 
-    /// Free all resources used by the GUI.
     pub fn deinit(self: *Self) void {
-        // Free widgets
-        self.widgets.deinit(self.allocator);
+        // TODO: Loop thru and deinit all children widgets
+        self.root.deinit(self.allocator);
 
         // Deinit event handler
         self.event_handler.deinit(self.allocator);
@@ -96,30 +79,22 @@ pub const Gui = struct {
         sdl.SDL_Quit();
     }
 
-    /// Run the GUI/start the event loop.
     pub fn run(self: *Self) void {
-        while (self.widgets.items[0].root.quit != true) {
+        while (self.root.root.quit != true) {
             self.event_handler.handleEvents();
 
-            // Display all widgets
-            for (self.widgets.items) |*w| {
-                if (w.info().display) {
-                    w.display(self.renderer);
-                }
+            // TODO: Loop thru all children and call `display`
+            if (self.root.root.info.display) {
+                self.root.display(self.renderer);
             }
             sdl.SDL_RenderPresent(self.renderer);
             sdl.SDL_Delay(1000 / 60);
         }
     }
-
-    /// Add an event listener.
-    pub fn addEventListener(self: *Self, event_type: sdl.SDL_EventType, ctx: *widget.Widget, callback: EventHandler.Callback) !void {
-        try self.event_handler.register(self.allocator, event_type, ctx, callback);
-    }
 };
 
-test {
-    var gui = try Gui.init(testing.allocator, "Hello World!", .{});
+test "Init Gui" {
+    var gui = try Gui.init(testing.allocator, "Hello World", .{});
     defer gui.deinit();
     gui.run();
 }

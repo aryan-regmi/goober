@@ -2,7 +2,7 @@ const std = @import("std");
 const testing = std.testing;
 
 pub const sdl = @import("sdl.zig").sdl;
-pub const widgets = @import("widgets.zig");
+pub const widget = @import("widget.zig");
 pub const Gui = @import("gui.zig").Gui;
 
 /// Panics with the error returned by `SDL_GetError`.

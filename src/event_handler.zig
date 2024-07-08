@@ -24,6 +24,18 @@ pub const EventHandler = struct {
         }
     }
 
+    pub fn remove(self: *Self, ev_type: sdl.SDL_EventType, ctx: *anyopaque) void {
+        const list = self.registered_callbacks.getPtr(ev_type);
+        if (list) |cbs| {
+            for (cbs.items, 0..) |cb_info, i| {
+                if (cb_info.ctx == ctx) {
+                    _ = cbs.swapRemove(i);
+                    return;
+                }
+            }
+        }
+    }
+
     pub fn handleEvents(self: *Self) void {
         var event: sdl.SDL_Event = undefined;
         while (sdl.SDL_PollEvent(&event) != 0) {
