@@ -6,15 +6,18 @@ const Allocator = std.mem.Allocator;
 const EventHandler = @import("event_handler.zig").EventHandler;
 const Gui = @import("lib.zig").Gui;
 
+/// Types of possible widgets.
 pub const WidgetType = enum {
     root,
 };
 
+/// A widget/component of the GUI.
 pub const Widget = union(WidgetType) {
     const Self = @This();
 
     root: Root,
 
+    /// Initialize the widget.
     pub fn init(kind: WidgetType) !Self {
         var self: Self = undefined;
         switch (kind) {
@@ -25,18 +28,21 @@ pub const Widget = union(WidgetType) {
         }
     }
 
+    /// Display/render the widget.
     pub fn display(self: *Self, renderer: *sdl.SDL_Renderer) void {
         switch (self.*) {
             .root => |*r| r.display(renderer),
         }
     }
 
+    /// Get the widget's info.
     pub fn info(self: *Self) WidgetInfo {
         switch (self.*) {
             .root => |*r| return r.info,
         }
     }
 
+    /// Add an event listener to the widget.
     pub fn addEventListener(self: *Self, ctx: *Gui, event_type: sdl.SDL_EventType, callback: EventHandler.Callback) !void {
         switch (self.*) {
             .root => |*r| try ctx.event_handler.register(ctx.allocator, event_type, r, callback),
@@ -44,6 +50,7 @@ pub const Widget = union(WidgetType) {
     }
 };
 
+/// The parent of all widgets.
 pub const Root = struct {
     const Self = @This();
 
@@ -60,6 +67,7 @@ pub const Root = struct {
     }
 };
 
+/// Information about a widget.
 pub const WidgetInfo = struct {
     name: ?[]const u8 = null,
     display: bool = true,
