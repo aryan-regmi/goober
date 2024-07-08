@@ -84,7 +84,9 @@ pub const Gui = struct {
             self.event_handler.handleEvents();
 
             // TODO: Loop thru all children and call `display`
-            self.root.display(self.renderer);
+            if (self.root.root.info.display) {
+                self.root.display(self.renderer);
+            }
             sdl.SDL_RenderPresent(self.renderer);
             sdl.SDL_Delay(1000 / 60);
         }

@@ -21,6 +21,7 @@ pub const Widget = union(WidgetType) {
     const Self = @This();
     root: *Root,
 
+    /// Create a new widget of type `kind`.
     pub fn init(kind: WidgetType, allocator: Allocator, event_handler: *EventHandler) !Self {
         var self: Self = undefined;
         switch (kind) {
@@ -31,12 +32,14 @@ pub const Widget = union(WidgetType) {
         }
     }
 
+    /// Free resources used by the widget.
     pub fn deinit(self: *Self, allocator: Allocator) void {
         switch (self.*) {
             .root => self.root.deinit(allocator),
         }
     }
 
+    /// Display the widget.
     pub fn display(self: *Self, renderer: *sdl.SDL_Renderer) void {
         switch (self.*) {
             .root => self.root.display(renderer),
@@ -73,7 +76,5 @@ const Root = struct {
     pub fn display(_: *Self, renderer: *sdl.SDL_Renderer) void {
         _ = sdl.SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 0xff);
         _ = sdl.SDL_RenderClear(renderer);
-        // sdl.SDL_RenderPresent(renderer);
-        // sdl.SDL_Delay(1000 / 60);
     }
 };
